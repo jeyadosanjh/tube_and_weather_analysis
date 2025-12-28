@@ -36,20 +36,23 @@ plt.savefig("monthly_rainfall_vs_lost_customer_hours.png", dpi=300)
 plt.show()
 
 #lost customer hours over time
-plt.figure()
-
-plt.plot(
-    final_df["month"],
-    final_df["lost_customer_hours"]
+monthly_avg = (
+    final_df
+    .assign(month_num=final_df["month"].dt.month)
+    .groupby("month_num")["lost_customer_hours"]
+    .mean()
+    .reset_index()
 )
 
-plt.title("Lost Customer Hours Over Time")
-plt.xlabel("Year")
-plt.ylabel("Lost Customer Hours")
-
+plt.figure()
+plt.plot(monthly_avg["month_num"], monthly_avg["lost_customer_hours"])
+plt.xticks(range(1,13))
+plt.xlabel("Month")
+plt.ylabel("Average Lost Customer Hours")
+plt.title("Average Monthly Lost Customer Hours (Seasonality)")
 plt.tight_layout()
-plt.savefig("lost_customer_hours_over_time.png", dpi=300)
 plt.show()
+
 
 #correlation heatmap (weather vs disruption)
 corr_df = final_df[
@@ -65,6 +68,7 @@ sns.heatmap(
     cmap="coolwarm",
     fmt=".2f"
 )
+
 
 plt.title("Correlation Between Weather Variables and Lost Customer Hours")
 
