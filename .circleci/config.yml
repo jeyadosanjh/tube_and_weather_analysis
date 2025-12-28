@@ -11,7 +11,7 @@ jobs:
           command: pip install -r requirements.txt
       - run:
           name: Run tests
-          command: pytest basic/test_tube_weather.py
+          command: pytest data_analysis/test_tube_weather.py
 
 workflows:
   version: 2
