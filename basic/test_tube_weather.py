@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from basic_function import tidy_tube_lch
+from tube_weather import tidy_tube_lch
 
 class unit_tests(unittest.TestCase):
 	def test_tidy_tube_lch_basic(self):
