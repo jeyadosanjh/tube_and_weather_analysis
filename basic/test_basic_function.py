@@ -1,35 +1,29 @@
 import unittest
+import pandas as pd
 from basic_function import tidy_tube_lch
 
-class TestBasicFunction(unittest.TestCase):
-    def test_tidy_tube_lch(self):
-        # Sample input DataFrame
-        import pandas as pd
+class unit_tests(unittest.TestCase):
+	def test_tidy_tube_lch_basic(self):
+		# small sample that mirrors the expected sheet shape
+		tube_df = pd.DataFrame({
+			"Financial Year": ["2011/12", "2011/12"],
+			"P01": [10, "20"],
+			"P02": [None, 5],
+		})
 
-        data = {
-            "Station": ["A", "B"],
-            "LCH_2020-01": [100, 200],
-            "LCH_2020-02": [150, 250],
-        }
-        tube_df = pd.DataFrame(data)
+		result = tidy_tube_lch(tube_df)
 
-        # Expected output DataFrame
-        expected_data = {
-            "Station": ["A", "A", "B", "B"],
-            "period": ["2020-01", "2020-02", "2020-01", "2020-02"],
-            "LCH": [100, 150, 200, 250],
-        }
-        expected_df = pd.DataFrame(expected_data)
+		# result should be a DataFrame with 3 non-null lost_customer_hours values
+		self.assertIsInstance(result, pd.DataFrame)
+		self.assertEqual(result.shape[0], 3)
 
-        # Run the function
-        result_df = tidy_tube_lch(tube_df)
+		# periods should have been extracted as integers 1 and 2
+		self.assertSetEqual(set(result["period"].unique()), {1, 2})
 
-        # Reset index for comparison
-        result_df = result_df.reset_index(drop=True)
-        expected_df = expected_df.reset_index(drop=True)
-
-        # Assert DataFrames are equal
-        pd.testing.assert_frame_equal(result_df, expected_df)
+		# lost_customer_hours should be numeric and contain the expected values
+		self.assertTrue(pd.api.types.is_numeric_dtype(result["lost_customer_hours"]))
+		self.assertEqual(sorted(result["lost_customer_hours"].astype(float).tolist()), [5.0, 10.0, 20.0])
+    
 
 if __name__ == "__main__":
     unittest.main()
