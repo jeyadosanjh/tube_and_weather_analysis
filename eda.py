@@ -51,6 +51,7 @@ plt.xlabel("Month")
 plt.ylabel("Average Lost Customer Hours")
 plt.title("Average Monthly Lost Customer Hours (Seasonality)")
 plt.tight_layout()
+plt.savefig("lost_customer_hours_over_time.png", dpi=300)
 plt.show()
 
 
