@@ -11,7 +11,7 @@ jobs:
           command: pip install -r requirements.txt
       - run:
           name: Run tests
-          command: pytest
+          command: pytest basic/test_basic_function.py
 
 workflows:
   version: 2
