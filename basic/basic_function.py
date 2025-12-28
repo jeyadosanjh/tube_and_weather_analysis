@@ -1,5 +1,113 @@
+import pandas as pd
 
-def increment(x):
-    """Returns the input value incremented by 1."""
-    return x + 1
+tube_path = "data/raw/tfl-tube-performance.xlsx"
+weather_path = "data/raw/london_weather_data_1979_to_2023.csv"
+
+
+def load_data():
+    tube_df = pd.read_excel(tube_path, sheet_name="Lost customer hours")
+    weather_df = pd.read_csv(weather_path)
+    calendar_df = pd.read_excel(tube_path, sheet_name="Key trends")
+    return tube_df, weather_df, calendar_df
+
+
+def tidy_tube_lch(tube_df: pd.DataFrame) -> pd.DataFrame:
+    tube_long = tube_df.melt(
+        id_vars=["Financial Year"],
+        var_name="period",
+        value_name="lost_customer_hours",
+    )
+
+    tube_long["period"] = tube_long["period"].str.extract(r"(\d+)").astype(int)
+
+    # convert to numeric (some cells can be strings)
+    tube_long["lost_customer_hours"] = pd.to_numeric(tube_long["lost_customer_hours"], errors="coerce")
+
+    # drop blanks
+    tube_long = tube_long.dropna(subset=["lost_customer_hours"])
+
+    return tube_long
+
+
+def clean_period_calendar(calendar_df: pd.DataFrame) -> pd.DataFrame:
+    cal = calendar_df[
+        ["Period and Financial year", "Reporting Period", "Period ending", "Month"]
+    ].rename(
+        columns={
+            "Reporting Period": "period",
+            "Period ending": "period_end",
+            "Month": "month",
+        }
+    )
+
+    cal = cal.dropna(subset=["period"])
+    cal["period"] = cal["period"].astype(int)
+
+    # create Financial Year (e.g., "11/12" -> "2011/12")
+    # "Period and Financial year" looks like "02_11/12"
+    cal["Financial Year"] = cal["Period and Financial year"].str.extract(r"(\d{2}/\d{2})")
+    cal["Financial Year"] = "20" + cal["Financial Year"]
+
+    # normalise month to month-start (so it matches weather resampling)
+    cal["month"] = pd.to_datetime(cal["month"]).dt.to_period("M").dt.to_timestamp()
+
+    return cal[["Financial Year", "period", "period_end", "month"]]
+
+
+def monthly_weather(weather_df: pd.DataFrame) -> pd.DataFrame:
+    # DATE is yyyymmdd as int
+    w = weather_df.copy()
+    w["date"] = pd.to_datetime(w["DATE"].astype(str), format="%Y%m%d", errors="coerce")
+    w = w.dropna(subset=["date"])
+
+    w["month"] = w["date"].dt.to_period("M").dt.to_timestamp()
+
+    weather_monthly = (
+        w.groupby("month", as_index=False)
+        .agg(
+            TX_mean=("TX", "mean"),
+            TN_mean=("TN", "mean"),
+            RR_sum=("RR", "sum"),
+            SS_mean=("SS", "mean"),
+            HU_mean=("HU", "mean"),
+        )
+    )
+
+    return weather_monthly
+
+
+def main():
+    tube_df, weather_df, calendar_df = load_data()
+
+    tube_long = tidy_tube_lch(tube_df)
+    calendar_clean = clean_period_calendar(calendar_df)
+    weather_monthly = monthly_weather(weather_df)
+
+    # merge tube with calendar dates
+    tube_with_dates = tube_long.merge(
+        calendar_clean,
+        on=["Financial Year", "period"],
+        how="inner",
+    )
+
+    print("\n=== Tube with dates (ready to merge to weather) ===")
+    print(tube_with_dates.head())
+    print(tube_with_dates.info())
+
+    print("\n=== Weather monthly ===")
+    print(weather_monthly.head())
+    print(weather_monthly.info())
+
+    # final merge with weather
+    final_df = tube_with_dates.merge(weather_monthly, on="month", how="left")
+
+    print("\n=== Final merged dataset (tube + weather) ===")
+    print(final_df.head())
+    print(final_df.info())
+
+    final_df.to_csv("data/tube_weather_monthly.csv", index=False)
+
+
+if __name__ == "__main__":
+    main()
 
