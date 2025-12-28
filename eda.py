@@ -27,6 +27,15 @@ sns.scatterplot(
     alpha=0.7
 )
 
+sns.regplot(
+    data=final_df,
+    x="RR_sum",
+    y="lost_customer_hours",
+    scatter_kws={"alpha": 0.6},
+    line_kws={"color": "red"},
+    ci=None
+)
+
 plt.title("Monthly Rainfall vs Lost Customer Hours on the London Underground")
 plt.xlabel("Total Monthly Rainfall (mm)")
 plt.ylabel("Lost Customer Hours")
