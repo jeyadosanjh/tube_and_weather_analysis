@@ -1,6 +1,7 @@
 # data loading + cleaning + features
 
 import pandas as pd
+import numpy as np
 
 tube_path = "data/raw/tfl-tube-performance.xlsx"
 weather_path = "data/raw/london_weather_data_1979_to_2023.csv"
@@ -45,22 +46,30 @@ def clean_period_calendar(calendar_df: pd.DataFrame) -> pd.DataFrame:
     cal = cal.dropna(subset=["period"])
     cal["period"] = cal["period"].astype(int)
 
-    # create Financial Year (e.g., "11/12" -> "2011/12")
-    # "Period and Financial year" looks like "02_11/12"
-    cal["Financial Year"] = cal["Period and Financial year"].str.extract(r"(\d{2}/\d{2})")
+    # Extract financial year token like "11/12" from "02_11/12"
+    cal["Financial Year"] = cal["Period and Financial year"].astype(str).str.extract(r"(\d{2}/\d{2})")
     cal["Financial Year"] = "20" + cal["Financial Year"]
 
-    # normalise month to month-start (so it matches weather resampling)
-    cal["month"] = pd.to_datetime(cal["month"]).dt.to_period("M").dt.to_timestamp()
+    # Convert dates properly
+    cal["period_end"] = pd.to_datetime(cal["period_end"], errors="coerce")
+    cal["month"] = pd.to_datetime(cal["month"], errors="coerce").dt.to_period("M").dt.to_timestamp()
+
+    # Drop rows that failed date conversion
+    cal = cal.dropna(subset=["Financial Year", "period_end", "month"])
 
     return cal[["Financial Year", "period", "period_end", "month"]]
 
 
 def monthly_weather(weather_df: pd.DataFrame) -> pd.DataFrame:
-    # DATE is yyyymmdd as int
     w = weather_df.copy()
+
     w["date"] = pd.to_datetime(w["DATE"].astype(str), format="%Y%m%d", errors="coerce")
     w = w.dropna(subset=["date"])
+
+    # Coerce key weather columns to numeric (prevents dtype=object mean errors)
+    for col in ["TX", "TN", "RR", "SS", "HU"]:
+        if col in w.columns:
+            w[col] = pd.to_numeric(w[col], errors="coerce")
 
     w["month"] = w["date"].dt.to_period("M").dt.to_timestamp()
 
