@@ -103,8 +103,18 @@ plt.show()
 #seasonality decomposition
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-result = seasonal_decompose(final_df.set_index("month")["lost_customer_hours"], model="additive", period=12)
-result.plot()
+ts = (
+    final_df
+    .sort_values("month")
+    .set_index("month")["lost_customer_hours"]
+    .dropna()
+)
+result = seasonal_decompose(ts, model="additive", period=12)
+
+fig = result.plot()
+fig.set_size_inches(10, 8)
+plt.suptitle("Seasonal Decomposition of Lost Customer Hours", fontsize=14)
 plt.tight_layout()
 plt.savefig("seasonality_decomposition_lost_customer_hours.png", dpi=300)
 plt.show()
+
