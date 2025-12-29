@@ -30,9 +30,3 @@ python data_analysis/tube_weather.py
 python data_analysis/baseline_model.py
 pytest
 ```
-
-## Use of AI Tools
-Large Language Models (LLMs) were used to:
-- Assist with Python debugging
-- Suggest improvements to unit tests
-- Help structure code and documentation
