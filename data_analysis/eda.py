@@ -7,9 +7,7 @@ final_df = pd.read_csv(
     parse_dates=["month"]
 )
 
-#styling 
-sns.set(style="whitegrid")
-
+ 
 DATA_PATH = "data/processed/tube_weather_monthly.csv"
 
 df = pd.read_csv(DATA_PATH, parse_dates=["month"])
@@ -84,5 +82,21 @@ plt.title("Correlation Between Weather Variables and Lost Customer Hours")
 
 plt.tight_layout()
 plt.savefig("correlation_heatmap.png", dpi=300)
+plt.show()
+
+# rolling statistics of lost customer hours
+final_df = final_df.sort_values("month")
+final_df["lch_3m_ma"] = final_df["lost_customer_hours"].rolling(window=3).mean()
+final_df["lch_6m_ma"] = final_df["lost_customer_hours"].rolling(window=6).mean()
+plt.figure()
+plt.plot(final_df["month"], final_df["lost_customer_hours"], label="Lost Customer Hours", alpha=0.5)
+plt.plot(final_df["month"], final_df["lch_3m_ma"], label="3-Month MA", color="orange")
+plt.plot(final_df["month"], final_df["lch_6m_ma"], label="6-Month MA", color="red")
+plt.xlabel("Month")
+plt.ylabel("Lost Customer Hours")
+plt.title("Lost Customer Hours with Rolling Averages")
+plt.legend()
+plt.tight_layout()
+plt.savefig("rolling_statistics_lost_customer_hours.png", dpi=300)
 plt.show()
 
