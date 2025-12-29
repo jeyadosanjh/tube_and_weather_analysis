@@ -165,10 +165,12 @@ def add_trend(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+from typing import List
+
 def add_lag_features(
     df: pd.DataFrame,
     target: str = "lost_customer_hours",
-    lags: list[int] = [1, 3, 6],
+    lags: List[int] = [1, 3, 6],
 ) -> pd.DataFrame:
     """
     Add lagged versions of the target variable.
