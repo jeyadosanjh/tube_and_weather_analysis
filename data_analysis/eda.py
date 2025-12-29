@@ -182,7 +182,7 @@ def plot_all_weather_scatters(df: pd.DataFrame) -> None:
 
 def plot_correlation_heatmap(df: pd.DataFrame) -> None:
     """
-    Matplotlib-only correlation heatmap (no seaborn dependency).
+    Matplotlib-only correlation heatmap
     """
     corr_cols = [
         "lost_customer_hours",
