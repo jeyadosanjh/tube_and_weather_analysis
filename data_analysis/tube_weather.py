@@ -1,3 +1,5 @@
+# data loading + cleaning + features
+
 import pandas as pd
 
 tube_path = "data/raw/tfl-tube-performance.xlsx"
@@ -101,11 +103,71 @@ def main():
     # final merge with weather
     final_df = tube_with_dates.merge(weather_monthly, on="month", how="left")
 
+    final_df = final_df.rename(columns={
+    "TX_mean": "avg_max_temp",
+    "TN_mean": "avg_min_temp",
+    "RR_sum": "total_rainfall",
+    "SS_mean": "avg_sunshine",
+    "HU_mean": "avg_humidity",
+})
+
     print("\n=== Final merged dataset (tube + weather) ===")
     print(final_df.head())
     print(final_df.info())
 
     final_df.to_csv("data/tube_weather_monthly.csv", index=False)
+
+
+DATA_PATH = "data/processed/tube_weather_monthly.csv"
+
+def load_processed_data(path: str = DATA_PATH) -> pd.DataFrame:
+    """
+    Load the processed monthly Tube + weather dataset.
+    """
+    df = pd.read_csv(path, parse_dates=["month"])
+    df = df.dropna(subset=["lost_customer_hours"]).copy()
+    df["lost_customer_hours"] = pd.to_numeric(
+        df["lost_customer_hours"], errors="coerce"
+    )
+    return df.dropna(subset=["lost_customer_hours"])
+
+
+def add_seasonality(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add month-based seasonality features.
+    """
+    out = df.copy()
+    out["month_num"] = out["month"].dt.month
+
+    month_dummies = pd.get_dummies(
+        out["month_num"], prefix="month", drop_first=True
+    )
+    out = pd.concat([out, month_dummies], axis=1)
+
+    return out
+
+
+def add_trend(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add a linear time trend.
+    """
+    out = df.sort_values("month").copy()
+    out["time_index"] = np.arange(len(out))
+    return out
+
+
+def add_lag_features(
+    df: pd.DataFrame,
+    target: str = "lost_customer_hours",
+    lags: list[int] = [1, 3, 6],
+) -> pd.DataFrame:
+    """
+    Add lagged versions of the target variable.
+    """
+    out = df.sort_values("month").copy()
+    for lag in lags:
+        out[f"{target}_lag_{lag}"] = out[target].shift(lag)
+    return out
 
 
 if __name__ == "__main__":
