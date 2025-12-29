@@ -100,3 +100,11 @@ plt.tight_layout()
 plt.savefig("rolling_statistics_lost_customer_hours.png", dpi=300)
 plt.show()
 
+#seasonality decomposition
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+result = seasonal_decompose(final_df.set_index("month")["lost_customer_hours"], model="additive", period=12)
+result.plot()
+plt.tight_layout()
+plt.savefig("seasonality_decomposition_lost_customer_hours.png", dpi=300)
+plt.show()
